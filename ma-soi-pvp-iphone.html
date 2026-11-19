@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#171923">
+<title>Ma Sói PvP 0.1</title>
+<style>
+:root{color-scheme:dark;--bg:#11131b;--panel:#1d2130;--line:#343a50;--text:#f4f5fb;--muted:#aeb5ca;--gold:#ffd166;--blue:#6ecbff;--red:#ff7777;--green:#8ee3a1}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#191d2b,#101119 65%);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+main{max-width:620px;margin:auto;padding:18px 14px 34px}.top{text-align:center;padding:12px 0 18px}
+h1{margin:0;font-size:29px;letter-spacing:.4px}.sub{color:var(--muted);font-size:13px;margin-top:5px}
+.panel{background:rgba(29,33,48,.96);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 8px 28px #0003}
+h2{font-size:18px;margin:0 0 12px}.muted{color:var(--muted)}.small{font-size:13px;color:var(--muted)}
+.row{display:flex;gap:10px}.row>*{flex:1}
+button{border:0;border-radius:12px;padding:13px 14px;background:#39425e;color:white;font-weight:700;font-size:15px;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}.primary{background:linear-gradient(135deg,#5b7cff,#7659d6)}.gold{background:#8a6823;color:#fff2c7}.danger{background:#793d4a}.soft{background:#2b3042}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.char{border:2px solid var(--line);border-radius:15px;padding:14px 10px;text-align:center;background:#171b28;cursor:pointer}
+.char.selected{border-color:var(--gold);background:#37301f}.emoji{font-size:34px}.char b{display:block;font-size:17px;margin:4px 0}
+.stats{font-size:13px;color:var(--muted)}.hidden{display:none!important}
+.center{text-align:center}.big{font-size:24px;font-weight:800}.hpbar{height:9px;border-radius:20px;background:#34394b;overflow:hidden;margin-top:7px}.hpfill{height:100%;background:linear-gradient(90deg,#62d68b,#b5e879);transition:width .2s}
+.fighter{background:#171b28;border:1px solid var(--line);border-radius:14px;padding:12px}
+.fighter.active{border-color:var(--gold);box-shadow:0 0 0 1px #ffd16655}.fighter.dead{opacity:.45}
+.log{max-height:190px;overflow:auto;font-size:13px;color:#d4d9e8;line-height:1.5}.log div{padding:5px 0;border-bottom:1px solid #ffffff0c}
+.pill{display:inline-block;padding:4px 9px;border-radius:20px;background:#30374d;color:#dce3ff;font-size:12px}
+.notice{padding:11px;border-radius:12px;background:#292f43;color:#e3e8fa;margin:10px 0;font-size:14px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#111521;color:white}
+footer{text-align:center;color:#7f879d;font-size:12px;margin-top:20px}
+</style>
+</head>
+<body>
+<main>
+ <header class="top"><h1>🐺 MA SÓI PvP</h1><div class="sub">BẢN THỬ NGHIỆM 0.1 · Hai người · Một điện thoại</div></header>
+
+ <section id="setup" class="panel">
+  <h2>Chọn nhân vật</h2>
+  <div id="setupStep" class="notice">Người chơi 1 chọn nhân vật trước. Sau đó chuyển điện thoại cho người chơi 2.</div>
+  <div class="cards">
+   <div class="char" data-char="dan" onclick="choose('dan')"><div class="emoji">🧑</div><b>Dân</b><div class="stats">❤️ 2 HP · ⚔️ 2 sát thương</div></div>
+   <div class="char" data-char="soi" onclick="choose('soi')"><div class="emoji">🐺</div><b>Sói</b><div class="stats">❤️ 3 HP · ⚔️ 1 sát thương</div></div>
+  </div>
+  <div id="picked" class="notice hidden"></div>
+  <button id="confirmPick" class="primary" style="width:100%;margin-top:12px" disabled onclick="confirmPick()">Xác nhận lựa chọn</button>
+  <button id="reveal" class="gold hidden" style="width:100%;margin-top:10px" onclick="revealChoices()">Lật bài – bắt đầu trận!</button>
+ </section>
+
+ <section id="battle" class="hidden">
+  <div class="panel center">
+   <div class="small">KẾT QUẢ LỰA CHỌN</div>
+   <div class="row" style="margin-top:12px">
+    <div class="fighter" id="p1card"></div><div class="fighter" id="p2card"></div>
+   </div>
+  </div>
+  <div class="panel">
+   <h2>⚔️ Ai đánh trước?</h2>
+   <div id="rpsArea">
+    <div id="rpsPrompt" class="notice">Người chơi 1: chọn Kéo, Búa hoặc Bao. Sau đó chuyển máy cho người chơi 2.</div>
+    <div class="row" id="rpsButtons">
+     <button onclick="pickRps('keo')">✌️ Kéo</button><button onclick="pickRps('bua')">✊ Búa</button><button onclick="pickRps('bao')">✋ Bao</button>
+    </div>
+    <div id="rpsDone" class="notice hidden"></div>
+   </div>
+   <div id="turnInfo" class="notice hidden"></div>
+   <div class="row">
+    <div class="fighter" id="hp1"></div><div class="fighter" id="hp2"></div>
+   </div>
+   <button id="attack" class="primary" style="width:100%;margin-top:14px" disabled onclick="attack()">⚔️ Tấn công</button>
+   <button class="soft" style="width:100%;margin-top:9px" onclick="resetGame()">Chơi ván mới</button>
+  </div>
+  <div class="panel"><h2>📜 Nhật ký trận đấu</h2><div id="log" class="log"></div></div>
+ </section>
+ <section id="result" class="panel center hidden">
+  <div style="font-size:42px">🏆</div><h2 id="winner"></h2><p id="resultText" class="muted"></p>
+  <button class="primary" style="width:100%" onclick="resetGame()">Chơi lại</button>
+ </section>
+ <footer>Ma Sói PvP 0.1 · Bản thử nghiệm, chưa có kỹ năng hoặc trang bị</footer>
+</main>
+<script>
+const chars={
+ dan:{name:'Dân',emoji:'🧑',hp:2,dmg:2},
+ soi:{name:'Sói',emoji:'🐺',hp:3,dmg:1}
+};
+let picks=[null,null], chosen=null, picker=0, rps=[null,null], rpsPicker=0, fighters=[],turn=0,over=false;
+const $=id=>document.getElementById(id);
+function choose(key){
+ if(picker>1)return;
+ chosen=key;
+ document.querySelectorAll('.char').forEach(el=>el.classList.toggle('selected',el.dataset.char===key));
+ $('confirmPick').disabled=false;
+ $('picked').classList.remove('hidden');
+ $('picked').textContent=`Đã chọn ${chars[key].name}. Nhấn xác nhận rồi đưa điện thoại cho người chơi tiếp theo.`;
+}
+function confirmPick(){
+ if(!chosen)return;
+ picks[picker]=chosen; chosen=null;
+ document.querySelectorAll('.char').forEach(el=>el.classList.remove('selected'));
+ $('confirmPick').disabled=true;$('picked').classList.add('hidden');
+ if(picker===0){
+  picker=1;$('setupStep').textContent='Người chơi 1 đã chọn xong. Đưa điện thoại cho người chơi 2 chọn bí mật.';
+ }else{
+  $('setupStep').textContent='Cả hai đã chọn xong. Nhấn nút bên dưới để cùng lật bài.';
+  $('confirmPick').classList.add('hidden');$('reveal').classList.remove('hidden');
+ }
+}
+function revealChoices(){
+ $('setup').classList.add('hidden');$('battle').classList.remove('hidden');
+ fighters=picks.map((k,i)=>({key:k,...chars[k],hp:chars[k].hp,max:chars[k].hp,label:`Người chơi ${i+1}`}));
+ $('p1card').innerHTML=cardFace(fighters[0]);$('p2card').innerHTML=cardFace(fighters[1]);
+ log('Hai người chơi đã lật nhân vật. Oẳn tù tì để quyết định lượt đánh đầu tiên.');
+ updateHp();
+}
+function cardFace(f){return `<div class="emoji">${f.emoji}</div><b>${f.name}</b><div class="stats">❤️ ${f.max} HP · ⚔️ ${f.dmg} sát thương</div>`}
+function pickRps(v){
+ rps[rpsPicker]=v;
+ if(rpsPicker===0){
+  rpsPicker=1;$('rpsPrompt').textContent='Người chơi 1 đã chọn. Chuyển điện thoại cho người chơi 2 chọn.';
+  $('rpsButtons').classList.add('hidden');
+  $('rpsDone').classList.remove('hidden');$('rpsDone').textContent='Đang chờ người chơi 2...';
+  const wrap=document.createElement('div');wrap.className='row';wrap.id='rpsButtons2';
+  ['keo','bua','bao'].forEach((x,i)=>{let b=document.createElement('button');b.textContent=['✌️ Kéo','✊ Búa','✋ Bao'][i];b.onclick=()=>pickRps(x);wrap.appendChild(b)});
+  $('rpsArea').appendChild(wrap);
+ }else{
+  $('rpsButtons2')?.remove();
+  const names={keo:'✌️ Kéo',bua:'✊ Búa',bao:'✋ Bao'};
+  $('rpsDone').textContent=`P1: ${names[rps[0]]} · P2: ${names[rps[1]]}`;
+  if(rps[0]===rps[1]){
+   rps=[null,null];rpsPicker=0;$('rpsPrompt').textContent='Hòa rồi! Chuyển điện thoại cho người chơi 1 oẳn tù tì lại.';
+   $('rpsButtons').classList.remove('hidden');$('rpsDone').classList.add('hidden');return;
+  }
+  const win=({keo:'bao',bua:'keo',bao:'bua'})[rps[0]]===rps[1]?0:1;
+  turn=win;$('rpsButtons').classList.add('hidden');$('rpsPrompt').classList.add('hidden');
+  $('turnInfo').classList.remove('hidden');$('turnInfo').textContent=`Người chơi ${turn+1} thắng oẳn tù tì và được đánh trước. Sau đó hai bên luân phiên.`;
+  $('attack').disabled=false;updateHp();log(`Người chơi ${win+1} thắng oẳn tù tì và đi trước.`);
+ }
+}
+function attack(){
+ if(over)return;
+ const a=fighters[turn],d=fighters[1-turn];
+ if(d.hp<=0)return;
+ d.hp=Math.max(0,d.hp-a.dmg);
+ log(`${a.label} (${a.name}) tấn công ${d.label}, gây ${a.dmg} sát thương. ${d.label} còn ${d.hp}/${d.max} HP.`);
+ updateHp();
+ if(d.hp===0){over=true;$('attack').disabled=true;$('result').classList.remove('hidden');$('winner').textContent=`${a.label} chiến thắng!`;$('resultText').textContent=`${a.name} đã hạ gục ${d.name}.`;log(`${a.label} chiến thắng trận đấu!`);return;}
+ turn=1-turn;
+ $('turnInfo').textContent=`Đến lượt ${fighters[turn].label} (${fighters[turn].name}) tấn công.`;
+}
+function updateHp(){
+ fighters.forEach((f,i)=>{
+  const el=$('hp'+(i+1));el.classList.toggle('active',turn===i&&!over);el.classList.toggle('dead',f.hp<=0);
+  el.innerHTML=`<b>${f.label} · ${f.name}</b><div style="font-size:22px;margin-top:5px">❤️ ${f.hp}/${f.max}</div><div class="hpbar"><div class="hpfill" style="width:${f.hp/f.max*100}%"></div></div><div class="small" style="margin-top:7px">Sát thương: ${f.dmg}</div>`;
+ });
+}
+function log(s){const d=document.createElement('div');d.textContent=s;$('log').prepend(d)}
+function resetGame(){
+ picks=[null,null];chosen=null;picker=0;rps=[null,null];rpsPicker=0;fighters=[];turn=0;over=false;
+ $('setup').classList.remove('hidden');$('battle').classList.add('hidden');$('result').classList.add('hidden');
+ $('setupStep').textContent='Người chơi 1 chọn nhân vật trước. Sau đó chuyển điện thoại cho người chơi 2.';
+ $('confirmPick').classList.remove('hidden');$('confirmPick').disabled=true;$('reveal').classList.add('hidden');$('picked').classList.add('hidden');
+ $('rpsPrompt').classList.remove('hidden');$('rpsPrompt').textContent='Người chơi 1: chọn Kéo, Búa hoặc Bao. Sau đó chuyển máy cho người chơi 2.';
+ $('rpsButtons').classList.remove('hidden');$('rpsDone').classList.add('hidden');$('rpsButtons2')?.remove();
+ $('turnInfo').classList.add('hidden');$('attack').disabled=true;$('log').innerHTML='';
+}
+</script>
+</body></html>
